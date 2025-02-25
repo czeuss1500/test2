@@ -3,7 +3,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/drill
 
 
 
-function library:CreateWindow(name, size, hidebutton)
+function library:NewWindow(name, size, hidebutton)
 	local window = {}
 	window.name = name or ""
 	window.size = UDim2.fromOffset(size.X, size.Y) or UDim2.fromOffset(500, 600)
