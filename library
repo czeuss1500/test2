@@ -91,3 +91,302 @@ function library:CreateWindow(name, size, hidebutton)
 end
 
 return library
+
+function tab:CreateSector(name, side)
+    local sector = {
+        name = name or "",
+        side = (side and side:lower()) or "left"
+    }
+
+    -- Criando a estrutura principal
+    sector.Main = Instance.new("Frame", sector.side == "left" and tab.Left or tab.Right)
+    sector.Main.Name = sector.name:gsub(" ", "") .. "Sector"
+    sector.Main.BorderSizePixel = 0
+    sector.Main.ZIndex = 4
+    sector.Main.Size = UDim2.fromOffset(window.size.X.Offset / 2 - 17, 20)
+    sector.Main.BackgroundColor3 = window.theme.sectorcolor
+    
+    updateevent.Event:Connect(function(theme)
+        sector.Main.BackgroundColor3 = theme.sectorcolor
+    end)
+    
+    -- Criando elementos visuais
+    local function createOutline(parent, sizeOffset, positionOffset, zIndex, color)
+        local frame = Instance.new("Frame", parent)
+        frame.Size = parent.Size + UDim2.fromOffset(sizeOffset, sizeOffset)
+        frame.Position = UDim2.fromOffset(positionOffset, positionOffset)
+        frame.BorderSizePixel = 0
+        frame.ZIndex = zIndex
+        frame.BackgroundColor3 = color
+        
+        parent:GetPropertyChangedSignal("Size"):Connect(function()
+            frame.Size = parent.Size + UDim2.fromOffset(sizeOffset, sizeOffset)
+        end)
+        
+        updateevent.Event:Connect(function(theme)
+            frame.BackgroundColor3 = theme.outlinecolor
+        end)
+        
+        return frame
+    end
+
+    sector.Line = createOutline(sector.Main, 4, -2, 4, window.theme.accentcolor)
+    sector.BlackOutline = createOutline(sector.Main, 2, -1, 3, window.theme.outlinecolor2)
+    sector.Outline = createOutline(sector.Main, 4, -2, 2, window.theme.outlinecolor)
+    sector.BlackOutline2 = createOutline(sector.Main, 6, -3, 1, window.theme.outlinecolor2)
+
+    -- Criando o rótulo
+    local textSize = textservice:GetTextSize(sector.name, 15, window.theme.font, Vector2.new(2000, 2000))
+    sector.Label = Instance.new("TextLabel", sector.Main)
+    sector.Label.Size = UDim2.fromOffset(math.clamp(textSize.X + 13, 0, sector.Main.Size.X.Offset), textSize.Y)
+    sector.Label.Position = UDim2.fromOffset(12, -1)
+    sector.Label.BackgroundTransparency = 1
+    sector.Label.ZIndex = 6
+    sector.Label.Font = window.theme.font
+    sector.Label.Text = sector.name
+    sector.Label.TextSize = 15
+    sector.Label.TextColor3 = Color3.new(1, 1, 2552 / 255)
+
+    updateevent.Event:Connect(function(theme)
+        local newSize = textservice:GetTextSize(sector.name, 15, theme.font, Vector2.new(2000, 2000))
+        sector.Label.Size = UDim2.fromOffset(math.clamp(newSize.X + 13, 0, sector.Main.Size.X.Offset), newSize.Y)
+        sector.Label.Font = theme.font
+    end)
+    
+    -- Criando itens do setor
+    sector.Items = Instance.new("Frame", sector.Main)
+    sector.Items.Name = "items"
+    sector.Items.ZIndex = 2
+    sector.Items.BackgroundTransparency = 1
+    sector.Items.Size = UDim2.fromOffset(170, 140)
+    sector.Items.AutomaticSize = Enum.AutomaticSize.Y
+
+    sector.ListLayout = Instance.new("UIListLayout", sector.Items)
+    sector.ListLayout.FillDirection = Enum.FillDirection.Vertical
+    sector.ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    sector.ListLayout.Padding = UDim.new(0, 12)
+
+    sector.ListPadding = Instance.new("UIPadding", sector.Items)
+    sector.ListPadding.PaddingTop = UDim.new(0, 15)
+    sector.ListPadding.PaddingLeft = UDim.new(0, 6)
+    sector.ListPadding.PaddingRight = UDim.new(0, 6)
+
+    -- Função para ajustar tamanho do setor
+    function sector:FixSize()
+        sector.Main.Size = UDim2.fromOffset(window.size.X.Offset / 2 - 17, sector.ListLayout.AbsoluteContentSize.Y + 22)
+    end
+
+    -- Retornando setor criado
+    return sector
+end
+local Toggle = {}
+Toggle.__index = Toggle
+
+function Toggle.new(parent, text, default, flag, callback)
+    local self = setmetatable({}, Toggle)
+    
+    self.value = default or false
+    self.flag = flag or ""
+    self.callback = callback or function() end
+    
+    self.Main = Instance.new("Frame", parent)
+    self.Main.Size = UDim2.new(0, 100, 0, 20)
+    self.Main.BackgroundTransparency = 1
+    
+    self.Label = Instance.new("TextLabel", self.Main)
+    self.Label.Text = text
+    self.Label.Size = UDim2.new(1, -20, 1, 0)
+    self.Label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    self.CheckedFrame = Instance.new("Frame", self.Main)
+    self.CheckedFrame.Size = UDim2.new(0, 20, 0, 20)
+    self.CheckedFrame.Position = UDim2.new(1, -20, 0, 0)
+    self.CheckedFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    
+    self:Set(self.value)
+    
+    self.Main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self:Set(not self.value)
+        end
+    end)
+    
+    return self
+end
+
+function Toggle:Set(value)
+    self.value = value
+    self.CheckedFrame.Visible = value
+    if self.flag ~= "" then
+        library.flags[self.flag] = value
+    end
+    self.callback(value)
+end
+
+function Toggle:AddKeybind(default, flag)
+    local Keybind = {}
+    Keybind.value = default or "None"
+    Keybind.flag = flag or ""
+    
+    Keybind.Main = Instance.new("TextButton", self.Main)
+    Keybind.Main.Size = UDim2.new(0, 50, 0, 20)
+    Keybind.Main.Position = UDim2.new(1, -75, 0, 0)
+    Keybind.Main.Text = "[" .. Keybind.value .. "]"
+    
+    Keybind.Main.MouseButton1Click:Connect(function()
+        Keybind.Main.Text = "[...]"
+    end)
+    
+    userinputservice.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and Keybind.Main.Text == "[...]" then
+            Keybind.value = input.KeyCode.Name
+            Keybind.Main.Text = "[" .. Keybind.value .. "]"
+        end
+    end)
+    
+    return Keybind
+end
+
+return Toggle
+
+local dropdown = {}
+
+dropdown:AddDropdown({
+    text = "Dropdown",
+    values = {"Item 1", "Item 2", "Item 3"},
+    default = "Item 1",
+    multichoice = false,
+    flag = "DropdownFlag",
+    callback = function(value)
+        print("Selected:", value)
+    end
+})
+
+-- Adicionando um item ao dropdown
+dropdown:AddItem("New Item")
+
+-- Função que lida com a seleção do item
+function dropdown:Set(value)
+    if type(value) == "table" then
+        dropdown.values = value
+        dropdown:updateText(table.concat(value, ", "))
+        pcall(dropdown.callback, value)
+    else
+        dropdown:updateText(value)
+        dropdown.values = {value}
+        pcall(dropdown.callback, value)
+    end
+    dropdown.Changed:Fire(value)
+
+    if dropdown.flag and dropdown.flag ~= "" then
+        library.flags[dropdown.flag] = dropdown.multichoice and dropdown.values or dropdown.values[1]
+    end
+end
+
+-- Função que verifica se o item foi selecionado
+function dropdown:isSelected(item)
+    for i, v in pairs(dropdown.values) do
+        if v == item then
+            return true
+        end
+    end
+    return false
+end
+
+-- Atualizando o texto do dropdown
+function dropdown:updateText(text)
+    if #text >= 27 then
+        text = text:sub(1, 25) .. ".."
+    end
+    dropdown.SelectedLabel.Text = text
+end
+
+-- Evento para alterar o tema
+updateevent.Event:Connect(function(theme)
+    dropdown.BlackOutlineItems.BackgroundColor3 = theme.outlinecolor2
+end)
+
+-- Função para adicionar um item ao dropdown
+function dropdown:AddItem(v)
+    local Item = Instance.new("TextButton", dropdown.ItemsFrame)
+    Item.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Item.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Item.BorderSizePixel = 0
+    Item.Position = UDim2.fromOffset(0, 0)
+    Item.Size = UDim2.fromOffset(dropdown.Main.Size.X.Offset - 4, 20)
+    Item.ZIndex = 9
+    Item.Text = v
+    Item.Name = v
+    Item.AutoButtonColor = false
+    Item.Font = window.theme.font
+    Item.TextSize = 15
+    Item.TextXAlignment = Enum.TextXAlignment.Left
+    Item.TextStrokeTransparency = 1
+    dropdown.ItemsFrame.CanvasSize = dropdown.ItemsFrame.CanvasSize + UDim2.fromOffset(0, Item.AbsoluteSize.Y)
+
+    Item.MouseButton1Down:Connect(function()
+        if dropdown.multichoice then
+            if dropdown:isSelected(v) then
+                for i2, v2 in pairs(dropdown.values) do
+                    if v2 == v then
+                        table.remove(dropdown.values, i2)
+                    end
+                end
+                dropdown:Set(dropdown.values)
+            else
+                table.insert(dropdown.values, v)
+                dropdown:Set(dropdown.values)
+            end
+            return
+        else
+            dropdown:Set(v)
+        end
+    end)
+end
+
+-- Exemplo de como usar a função para adicionar um item
+dropdown:AddItem("New Dropdown Item")
+
+-- Função para configurar a cor do dropdown
+function dropdown:AddColorpicker(default, callback, flag)
+    local colorpicker = {}
+
+    colorpicker.callback = callback or function() end
+    colorpicker.default = default or Color3.fromRGB(255, 255, 255)
+    colorpicker.value = colorpicker.default
+    colorpicker.flag = flag or ((dropdown.text or "") .. tostring(#dropdown.Items:GetChildren()))
+
+    -- Adiciona o componente colorpicker à interface
+    local colorpickerMain = Instance.new("Frame", dropdown.Items)
+    colorpickerMain.Size = UDim2.fromOffset(16, 10)
+    colorpickerMain.BackgroundColor3 = colorpicker.value
+
+    -- Função para atualizar a cor
+    function colorpicker:Set(color)
+        colorpicker.value = color
+        colorpickerMain.BackgroundColor3 = color
+        pcall(colorpicker.callback, color)
+    end
+
+    return colorpicker
+end
+
+-- Exemplo de como configurar um colorpicker
+dropdown:AddColorpicker(Color3.fromRGB(255, 0, 0), function(color)
+    print("Selected color:", color)
+end)
+
+-- Definindo e conectando o evento para abrir e fechar o dropdown
+function dropdown:Toggle()
+    if dropdown.Nav.Rotation == 90 then
+        tweenservice:Create(dropdown.Nav, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {Rotation = -90}):Play()
+        dropdown.ItemsFrame.Visible = true
+    else
+        tweenservice:Create(dropdown.Nav, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {Rotation = 90}):Play()
+        dropdown.ItemsFrame.Visible = false
+    end
+end
+
+dropdown.Main.MouseButton1Down:Connect(function()
+    dropdown:Toggle()
+end)
