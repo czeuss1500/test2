@@ -1,0 +1,329 @@
+- Credits To The Original Devs @xz, @goof
+getgenv().Config = {
+	Invite = "informant.wtf",
+	Version = "0.0",
+}
+
+getgenv().luaguardvars = {
+	DiscordName = "username#0000",
+}
+
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/drillygzzly/Other/main/1"))()
+
+-- Library Initialization (Do not delete this)
+library:init()
+
+-- Library Initialization (Do not delete this)
+
+
+library:init()
+
+local Window = library.NewWindow({
+    title = "Custom Window",
+    size = UDim2.new(0, 500, 0, 400)
+})
+
+local tabs = {
+    Tab1 = Window:AddTab("Main Tab"),
+    Settings = library:CreateSettingsTab(Window),
+}
+
+local sections = {
+    Section1 = tabs.Tab1:AddSection("Main Section", 1),
+}
+
+-- Frame
+sections.Section1:AddText({
+    enabled = true,
+    text = "Main Frame",
+    flag = "Frame_Title",
+    risky = false,
+})
+
+sections.Section1:AddButton({
+    enabled = true,
+    text = "Toggle Frame Visibility",
+    flag = "Frame_ToggleButton",
+    callback = function()
+        Window.Frame.Visible = not Window.Frame.Visible
+    end
+})
+
+-- Outlines and Borders
+sections.Section1:AddText({
+    enabled = true,
+    text = "Outlines and Borders",
+    flag = "Outline_Title",
+    risky = false,
+})
+
+local outline = sections.Section1:AddBox({
+    enabled = true,
+    text = "Outline Example",
+    input = "Adjust the border style",
+    flag = "Outline_Box",
+    callback = function(v)
+        -- Additional actions for outline settings can go here
+        print("Outline adjusted:", v)
+    end
+})
+
+-- Top Bar and Title
+sections.Section1:AddText({
+    enabled = true,
+    text = "Top Bar Title",
+    flag = "TopBar_Title",
+    risky = false,
+})
+
+local topBar = sections.Section1:AddBox({
+    enabled = true,
+    text = "Top Bar Settings",
+    input = "Set Top Bar Height",
+    flag = "TopBar_Height",
+    callback = function(v)
+        Window.TopBar.Size = UDim2.fromOffset(Window.size.X.Offset, v)
+        print("Top Bar Height Set To:", v)
+    end
+})
+
+-- Tab List
+sections.Section1:AddText({
+    enabled = true,
+    text = "Tab List Settings",
+    flag = "TabList_Title",
+    risky = false,
+})
+
+local tabList = sections.Section1:AddBox({
+    enabled = true,
+    text = "Tab List Configuration",
+    input = "Tab List Position",
+    flag = "TabList_Position",
+    callback = function(v)
+        Window.TabList.Position = UDim2.fromOffset(v, 0)
+        print("Tab List Position Set To:", v)
+    end
+})
+
+-- Color Settings
+sections.Section1:AddText({
+    enabled = true,
+    text = "Color Settings",
+    flag = "Color_Settings",
+    risky = false,
+})
+
+sections.Section1:AddColor({
+    enabled = true,
+    text = "Set Top Bar Color",
+    flag = "TopBar_Color",
+    color = Color3.fromRGB(255, 255, 255),
+    trans = 0,
+    open = false,
+    callback = function(c)
+        Window.TopBar.BackgroundColor3 = c
+        print("Top Bar Color Set To:", c)
+    end
+})
+
+-- Notification Example
+library:SendNotification("Window Loaded", 5, Color3.fromRGB(0, 255, 0))
+
+-- Adjust window visibility toggle
+sections.Section1:AddButton({
+    enabled = true,
+    text = "Toggle Window Visibility",
+    flag = "Window_Toggle_Visibility",
+    callback = function()
+        Window.Frame.Visible = not Window.Frame.Visible
+    end
+})
+
+-- Save/Load Config
+library:SaveConfig("Window_Settings")
+library:LoadConfig("Window_Settings")
+
+local window = {}
+
+-- Função de inicialização da janela
+function window:Init()
+    -- Criando o fundo da janela
+    self.BackgroundImage = Instance.new("ImageLabel", self.Frame)
+    self.BackgroundImage.Name = "background"
+    self.BackgroundImage.BorderSizePixel = 0
+    self.BackgroundImage.ScaleType = Enum.ScaleType.Tile
+    self.BackgroundImage.Position = self.BlackLine.Position + UDim2.fromOffset(0, 1)
+    self.BackgroundImage.Size = UDim2.fromOffset(self.size.X.Offset, self.size.Y.Offset - self.TopBar.AbsoluteSize.Y - 1)
+    self.BackgroundImage.Image = self.theme.background or ""
+    self.BackgroundImage.ImageTransparency = self.BackgroundImage.Image ~= "" and 0 or 1
+    self.BackgroundImage.ImageColor3 = Color3.new()
+    self.BackgroundImage.BackgroundColor3 = self.theme.backgroundcolor
+    self.BackgroundImage.TileSize = UDim2.new(0, self.theme.tilesize, 0, self.theme.tilesize)
+
+    -- Atualiza a imagem de fundo com base no tema
+    updateevent.Event:Connect(function(theme)
+        self.BackgroundImage.Image = theme.background or ""
+        self.BackgroundImage.ImageTransparency = self.BackgroundImage.Image ~= "" and 0 or 1
+        self.BackgroundImage.BackgroundColor3 = theme.backgroundcolor
+        self.BackgroundImage.TileSize = UDim2.new(0, theme.tilesize, 0, theme.tilesize)
+    end)
+
+    -- Criando a linha de destaque
+    self.Line = Instance.new("Frame", self.Frame)
+    self.Line.Name = "line"
+    self.Line.Position = UDim2.fromOffset(0, 0)
+    self.Line.Size = UDim2.fromOffset(60, 1)
+    self.Line.BorderSizePixel = 0
+    self.Line.BackgroundColor3 = self.theme.accentcolor
+
+    -- Atualiza a cor da linha com base no tema
+    updateevent.Event:Connect(function(theme)
+        self.Line.BackgroundColor3 = theme.accentcolor
+    end)
+
+    -- Criando o layout para as abas
+    self.ListLayout = Instance.new("UIListLayout", self.TabList)
+    self.ListLayout.FillDirection = Enum.FillDirection.Horizontal
+    self.ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Inicializa a lista de abas
+    self.OpenedColorPickers = {}
+    self.Tabs = {}
+end
+
+-- Função para criar uma nova aba
+function window:CreateTab(name)
+    local tab = {}
+    tab.name = name or ""
+
+    -- Calcula o tamanho do texto da aba
+    local size = textservice:GetTextSize(tab.name, self.theme.fontsize, self.theme.font, Vector2.new(200, 300))
+
+    -- Criando o botão da aba
+    tab.TabButton = Instance.new("TextButton", self.TabList)
+    tab.TabButton.TextColor3 = self.theme.tabstextcolor
+    tab.TabButton.Text = tab.name
+    tab.TabButton.AutoButtonColor = false
+    tab.TabButton.Font = self.theme.font
+    tab.TabButton.TextYAlignment = Enum.TextYAlignment.Center
+    tab.TabButton.BackgroundTransparency = 1
+    tab.TabButton.BorderSizePixel = 0
+    tab.TabButton.Size = UDim2.fromOffset(size.X + 15, self.TabList.AbsoluteSize.Y - 1)
+    tab.TabButton.Name = tab.name
+    tab.TabButton.TextSize = self.theme.fontsize
+
+    -- Atualiza a aparência do botão de acordo com o tema
+    updateevent.Event:Connect(function(theme)
+        local size = textservice:GetTextSize(tab.name, theme.fontsize, theme.font, Vector2.new(200, 300))
+        tab.TabButton.TextColor3 = tab.TabButton.Name == "SelectedTab" and theme.accentcolor or theme.tabstextcolor
+        tab.TabButton.Font = theme.font
+        tab.TabButton.Size = UDim2.fromOffset(size.X + 15, self.TabList.AbsoluteSize.Y - 1)
+        tab.TabButton.TextSize = theme.fontsize
+    end)
+
+    -- Criando o painel da aba
+    tab.Left = Instance.new("ScrollingFrame", self.Frame)
+    tab.Left.Name = "leftside"
+    tab.Left.BorderSizePixel = 0
+    tab.Left.Size = UDim2.fromOffset(self.size.X.Offset / 2, self.size.Y.Offset - (self.TopBar.AbsoluteSize.Y + 1))
+    tab.Left.BackgroundTransparency = 1
+    tab.Left.Visible = false
+    tab.Left.ScrollBarThickness = 0
+    tab.Left.ScrollingDirection = "Y"
+    tab.Left.Position = self.BlackLine.Position + UDim2.fromOffset(0, 1)
+
+    -- Layout da lista à esquerda da aba
+    tab.LeftListLayout = Instance.new("UIListLayout", tab.Left)
+    tab.LeftListLayout.FillDirection = Enum.FillDirection.Vertical
+    tab.LeftListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tab.LeftListLayout.Padding = UDim.new(0, 12)
+
+    -- Padding da lista à esquerda da aba
+    tab.LeftListPadding = Instance.new("UIPadding", tab.Left)
+    tab.LeftListPadding.PaddingTop = UDim.new(0, 12)
+    tab.LeftListPadding.PaddingLeft = UDim.new(0, 12)
+    tab.LeftListPadding.PaddingRight = UDim.new(0, 12)
+
+    -- Criando o painel direito da aba
+    tab.Right = Instance.new("ScrollingFrame", self.Frame)
+    tab.Right.Name = "rightside"
+    tab.Right.ScrollBarThickness = 0
+    tab.Right.ScrollingDirection = "Y"
+    tab.Right.Visible = false
+    tab.Right.BorderSizePixel = 0
+    tab.Right.Size = UDim2.fromOffset(self.size.X.Offset / 2, self.size.Y.Offset - (self.TopBar.AbsoluteSize.Y + 1))
+    tab.Right.BackgroundTransparency = 1
+    tab.Right.Position = tab.Left.Position + UDim2.fromOffset(tab.Left.AbsoluteSize.X, 0)
+
+    -- Layout da lista à direita da aba
+    tab.RightListLayout = Instance.new("UIListLayout", tab.Right)
+    tab.RightListLayout.FillDirection = Enum.FillDirection.Vertical
+    tab.RightListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tab.RightListLayout.Padding = UDim.new(0, 12)
+
+    -- Padding da lista à direita da aba
+    tab.RightListPadding = Instance.new("UIPadding", tab.Right)
+    tab.RightListPadding.PaddingTop = UDim.new(0, 12)
+    tab.RightListPadding.PaddingLeft = UDim.new(0, 6)
+    tab.RightListPadding.PaddingRight = UDim.new(0, 12)
+
+    -- Função para selecionar a aba
+    local block = false
+    function tab:SelectTab()
+        repeat task.wait() until not block
+
+        block = true
+        for _, v in pairs(self.Tabs) do
+            if v ~= tab then
+                v.TabButton.TextColor3 = Color3.fromRGB(230, 230, 230)
+                v.TabButton.Name = "Tab"
+                v.Left.Visible = false
+                v.Right.Visible = false
+            end
+        end
+
+        tab.TabButton.TextColor3 = self.theme.accentcolor
+        tab.TabButton.Name = "SelectedTab"
+        tab.Right.Visible = true
+        tab.Left.Visible = true
+        self.Line:TweenSizeAndPosition(UDim2.fromOffset(size.X + 15, 1), UDim2.new(0, (tab.TabButton.AbsolutePosition.X - self.Frame.AbsolutePosition.X), 0, 0) + (self.BlackLine.Position - UDim2.fromOffset(0, 1)), Enum.EasingDirection.In, Enum.EasingStyle.Sine, 0.15)
+        task.wait(0.2)
+        block = false
+    end
+
+    -- Seleciona a aba se for a primeira
+    if #self.Tabs == 0 then
+        tab:SelectTab()
+    end
+
+    -- Evento para quando a aba for clicada
+    tab.TabButton.MouseButton1Down:Connect(function()
+        tab:SelectTab()
+    end)
+
+    -- Inicializa as seções da aba
+    tab.SectorsLeft = {}
+    tab.SectorsRight = {}
+
+    -- Função para criar uma nova seção na aba
+    function tab:CreateSector(name, side)
+        -- Criação da seção
+        local sector = {}
+        sector.name = name or ""
+        sector.side = side:lower() or "left"
+
+        -- Corpo da seção
+        sector.Main = Instance.new("Frame", sector.side == "left" and tab.Left or tab.Right)
+        sector.Main.Name = sector.name:gsub(" ", "") .. "Sector"
+        sector.Main.BorderSizePixel = 0
+        sector.Main.ZIndex = 4
+        sector.Main.Size = UDim2.fromOffset(self.size.X.Offset / 2 - 17, 20)
+        sector.Main.BackgroundColor3 = self.theme.sectorcolor
+
+        -- Restante da função continua com os detalhes de criação do botão, setando as propriedades e atualizando os elementos conforme o tema...
+    end
+end
+
+-- Chamada de inicialização da janela
+window:Init()
